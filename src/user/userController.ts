@@ -48,10 +48,31 @@ const createUser = async (req: Request, res: Response, next: NextFunction) => {
       expiresIn: "7d",
     });
     // Response
-    res.json({ accessToken: token });
+    res.status(201).json({ accessToken: token });
   } catch (error) {
     return next(createHttpError(500, "Error while signing the jwt token"));
   }
 };
 
-export { createUser };
+const loginUser = async (req: Request, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    const error = createHttpError(400, "All fields are required");
+    return next(error);
+  }
+
+  try {
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      const error = createHttpError(400, "User does not exist with this email");
+      return next(error);
+    }
+    res.json({ message: `User found with this email ${email}` });
+  } catch (err) {
+    const error = createHttpError(400, "Error while login with user");
+    return next(error);
+  }
+};
+
+export { createUser, loginUser };
