@@ -68,7 +68,7 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
       const error = createHttpError(400, "User does not exist with this email");
       return next(error);
     }
-    res.json({ message: `User found with this email ${email}` });
+    res.status(200).json({ message: `User found with this email ${email}` });
   } catch (err) {
     const error = createHttpError(400, "Error while login with user");
     return next(error);
