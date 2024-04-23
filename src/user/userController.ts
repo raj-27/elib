@@ -68,7 +68,23 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
       const error = createHttpError(400, "User does not exist with this email");
       return next(error);
     }
-    res.status(200).json({ message: `User found with this email ${email}` });
+    const isPasswordMatch = await bcrypt.compare(
+      password,
+      user.password as string
+    );
+
+    if (!isPasswordMatch) {
+      const error = createHttpError(400, "Username or password is incorrect");
+      return next(error);
+    }
+    try {
+      const token = sign({ sub: user._id }, config.jwtSecret as string, {
+        expiresIn: "7d",
+      });
+      res.status(200).json({ accessToke: token });
+    } catch (err) {
+      const error = createHttpError("400", "Error while generating toke");
+    }
   } catch (err) {
     const error = createHttpError(400, "Error while login with user");
     return next(error);
