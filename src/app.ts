@@ -8,7 +8,7 @@ const app = express();
 app.use(express.json());
 
 app.use("/api/user", userRouter);
-app.use("/api/book", bookRouter);
+app.use("/api/books", bookRouter);
 
 // Global Error Handler
 app.use(globalErrorHandler);
