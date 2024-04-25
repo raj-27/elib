@@ -6,6 +6,7 @@ import createHttpError from "http-errors";
 import bookModel from "./bookModel";
 import { AuthRequest } from "../middlewares/authenticate";
 
+// Creating new Document(Book) in the database
 const createBook = async (req: Request, res: Response, next: NextFunction) => {
   const { title, genre } = req.body;
   try {
@@ -66,6 +67,7 @@ const createBook = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+// Updating Single Document by id
 const updateBook = async (req: Request, res: Response, next: NextFunction) => {
   const { title, genre } = req.body;
   const bookId = req.params.bookId;
@@ -147,6 +149,7 @@ const updateBook = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
+// Get List of book from database
 const getBooks = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const bookList = await bookModel.find();
@@ -156,4 +159,38 @@ const getBooks = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { createBook, updateBook, getBooks };
+// Getting single book by id
+const getBook = async (req: Request, res: Response, next: NextFunction) => {
+  const bookId = req.params.bookId;
+  try {
+    const book = await bookModel.findById(bookId);
+    res.json(book);
+  } catch (error) {
+    return next(
+      createHttpError(500, `Error while fetching document by id ${bookId}`)
+    );
+  }
+};
+
+// Delete single book by using id
+const deleteBook = async (req: Request, res: Response, next: NextFunction) => {
+  const bookId = req.params.bookId;
+  try {
+    const result = await bookModel.findOneAndDelete({ _id: bookId });
+    if (!result) {
+      return next(
+        createHttpError(
+          "404",
+          `Document does not exist with this id(${bookId})`
+        )
+      );
+    }
+    res.json({ message: `Document deleted with id:${bookId}` });
+  } catch (error) {
+    return next(
+      createHttpError(500, `Error while delete book by id ${bookId}`)
+    );
+  }
+};
+
+export { createBook, updateBook, getBooks, getBook, deleteBook };
