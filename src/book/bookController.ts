@@ -118,7 +118,7 @@ const updateBook = async (req: Request, res: Response, next: NextFunction) => {
       const uploadResultPdf = await cloudinary.uploader.upload(bookFilePath, {
         resource_type: "raw",
         filename_override: completeFileName,
-        folder: "book-covers",
+        folder: "book-pdf",
         format: "pdf",
       });
       completeFileName = uploadResultPdf?.secure_url;
@@ -176,8 +176,8 @@ const getBook = async (req: Request, res: Response, next: NextFunction) => {
 const deleteBook = async (req: Request, res: Response, next: NextFunction) => {
   const bookId = req.params.bookId;
   try {
-    const result = await bookModel.findOneAndDelete({ _id: bookId });
-    if (!result) {
+    const book = await bookModel.findOne({ _id: bookId });
+    if (!book) {
       return next(
         createHttpError(
           "404",
@@ -185,7 +185,28 @@ const deleteBook = async (req: Request, res: Response, next: NextFunction) => {
         )
       );
     }
-    res.json({ message: `Document deleted with id:${bookId}` });
+    const _req = req as AuthRequest;
+    if (book.author.toString() !== _req.userId) {
+      return next(createHttpError(403, "You can not delete others book"));
+    }
+
+    // Process for coverimage
+    const coverFileSplits = book.coverImage.split("/");
+    const coverImagePublicId =
+      coverFileSplits.at(-2) + "/" + coverFileSplits.at(-1)?.split(".")?.at(-2);
+    console.log({ coverFileSplits, coverImagePublicId });
+
+    // Process for file
+    const bookFileSplits = book.file.split("/");
+    const bookFilePublicId =
+      bookFileSplits.at(-2) + "/" + bookFileSplits.at(-1);
+
+    await cloudinary.uploader.destroy(coverImagePublicId);
+    await cloudinary.uploader.destroy(bookFilePublicId, {
+      resource_type: "raw",
+    });
+    await bookModel.deleteOne({ _id: bookId });
+    res.status(204).json({ message: `Document deleted with id:${bookId}` });
   } catch (error) {
     return next(
       createHttpError(500, `Error while delete book by id ${bookId}`)
