@@ -28,6 +28,8 @@ const createUser = async (req: Request, res: Response, next: NextFunction) => {
   }
 
   //   Password hash
+  /* The code snippet you provided is responsible for creating a new user in the database after hashing
+  the user's password using bcrypt. */
   const hashPassword = await bcrypt.hash(password, 10);
 
   // Process
@@ -44,6 +46,7 @@ const createUser = async (req: Request, res: Response, next: NextFunction) => {
 
   try {
     // Token Generation JWT
+    /* This line of code is generating a JSON Web Token (JWT) for the newly created user. */
     const token = sign({ sub: newUser._id }, config.jwtSecret as string, {
       expiresIn: "7d",
     });
@@ -81,9 +84,10 @@ const loginUser = async (req: Request, res: Response, next: NextFunction) => {
       const token = sign({ sub: user._id }, config.jwtSecret as string, {
         expiresIn: "7d",
       });
-      res.status(200).json({ accessToke: token });
+      res.status(200).json({ accessToken: token });
     } catch (err) {
       const error = createHttpError("400", "Error while generating toke");
+      return next(error);
     }
   } catch (err) {
     const error = createHttpError(400, "Error while login with user");

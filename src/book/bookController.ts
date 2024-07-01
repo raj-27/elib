@@ -8,7 +8,7 @@ import { AuthRequest } from "../middlewares/authenticate";
 
 // Creating new Document(Book) in the database
 const createBook = async (req: Request, res: Response, next: NextFunction) => {
-  const { title, genre } = req.body;
+  const { title, genre, description } = req.body;
   try {
     const files = req.files as { [filename: string]: Express.Multer.File[] };
     const coverImageMimeType = files.coverImage[0].mimetype.split("/").at(-1);
@@ -44,6 +44,7 @@ const createBook = async (req: Request, res: Response, next: NextFunction) => {
     const newBook = await bookModel.create({
       title,
       genre,
+      description,
       author: _req.userId,
       coverImage: uploadResult.secure_url,
       file: bookFileUploadResult.secure_url,
@@ -56,7 +57,7 @@ const createBook = async (req: Request, res: Response, next: NextFunction) => {
     } catch (error) {
       console.log(error);
     }
-
+    console.log(newBook);
     res.status(201).json({ id: newBook._id });
   } catch (err) {
     const error = createHttpError(
@@ -69,7 +70,7 @@ const createBook = async (req: Request, res: Response, next: NextFunction) => {
 
 // Updating Single Document by id
 const updateBook = async (req: Request, res: Response, next: NextFunction) => {
-  const { title, genre } = req.body;
+  const { title, genre, description } = req.body;
   const bookId = req.params.bookId;
 
   const book = await bookModel.findOne({ _id: bookId });
@@ -131,12 +132,12 @@ const updateBook = async (req: Request, res: Response, next: NextFunction) => {
   }
 
   try {
-    bookModel.findByIdAndUpdate;
     const updatedBook = await bookModel.findByIdAndUpdate(
       bookId,
       {
         title,
         genre,
+        description,
         coverImage: completeCoverImage ? completeCoverImage : book.coverImage,
         file: completeFileName ? completeFileName : book.file,
       },
@@ -152,7 +153,11 @@ const updateBook = async (req: Request, res: Response, next: NextFunction) => {
 // Get List of book from database
 const getBooks = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const bookList = await bookModel.find();
+    const _req = req as AuthRequest;
+    const userId = _req.userId;
+    const bookList = await bookModel
+      .find({ author: userId })
+      .populate("author", "name");
     res.status(200).json(bookList);
   } catch (error) {
     return next(createHttpError(501, "Error while getting document"));
@@ -163,7 +168,7 @@ const getBooks = async (req: Request, res: Response, next: NextFunction) => {
 const getBook = async (req: Request, res: Response, next: NextFunction) => {
   const bookId = req.params.bookId;
   try {
-    const book = await bookModel.findById(bookId);
+    const book = await bookModel.findById(bookId).populate("author", "name");
     res.json(book);
   } catch (error) {
     return next(
